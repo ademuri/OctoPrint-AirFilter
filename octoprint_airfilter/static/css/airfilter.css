@@ -1,1 +1,7 @@
-/* TODO: Have your plugin's CSS files generated to here. */
+fieldset.airfilter {
+  display: block;
+  margin: 0px 2px 10px 2px;
+  padding: 0 0.75em 0.625em 0.75em;
+  border-width: 2px 0px 0px;
+  border-style: groove;
+}

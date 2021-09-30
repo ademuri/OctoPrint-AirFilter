@@ -1,0 +1,75 @@
+<h4>{{ _('Air Filter') }}</h4>
+<form class="form-horizontal">
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Pin') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your air filter is attached to.') }}">
+            <input type="number" data-bind="value: settings.plugins.airfilter.pin">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Invert') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether the output pin should be inverted (i.e. logical high when off).') }}">
+            <input type="checkbox" data-bind="checked: settings.plugins.airfilter.invert">
+        </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Is PWM') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether the output pin should use PWM to control the speed.') }}">
+            <input type="checkbox" data-bind="checked: settings.plugins.airfilter.is_pwm">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('PWM frequency') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The PWM output frequency') }}">
+            <input type="number" data-bind="value: settings.plugins.airfilter.pwm_frequency, enable: settings.plugins.airfilter.is_pwm">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('PWM duty cycle') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The PWM output duty cycle - what percentage of the time the signal should be on') }}">
+            <input type="number" data-bind="value: settings.plugins.airfilter.pwm_duty_cycle, enable: settings.plugins.airfilter.is_pwm">
+        </div>
+    </div>
+  </fieldset>
+
+
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Enable hotend temperature threshold') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether to turn on the air filter when the hotend is above a set temperature.') }}">
+            <input type="checkbox" data-bind="checked: settings.plugins.airfilter.enable_temperature_threshold">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Hotend temperature threshold') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Turn on the air filter when the hotend is above this temperature') }}">
+            <input type="number" data-bind="value: settings.plugins.airfilter.temperature_threshold, enable: settings.plugins.airfilter.enable_temperature_threshold">
+        </div>
+    </div>
+  </fieldset>
+
+
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Turn on at print start') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether to turn on the air filter when the hotend is above a set temperature.') }}">
+            <input type="checkbox" data-bind="checked: settings.plugins.airfilter.print_start_trigger">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Print end delay, seconds') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Run the air filter for this long after the print ends.') }}">
+            <input type="number" data-bind="value: settings.plugins.airfilter.print_end_delay, enable: settings.plugins.airfilter.print_start_trigger">
+        </div>
+    </div>
+  </fieldset>
+</form>
