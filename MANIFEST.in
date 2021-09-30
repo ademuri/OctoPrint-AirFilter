@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_airfilter/templates *
+recursive-include octoprint_airfilter/translations *
+recursive-include octoprint_airfilter/static *
