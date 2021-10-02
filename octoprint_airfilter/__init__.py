@@ -11,21 +11,92 @@ from __future__ import absolute_import
 # Take a look at the documentation on what other plugin mixins are available.
 
 import octoprint.plugin
-#import RPi.GPIO as GPIO
 
-class AirfilterPlugin(octoprint.plugin.SettingsPlugin,
+# Hack to allow developing this plugin on non-RPi machines
+try:
+    __import__("RPi.GPIO as GPIO")
+except ImportError as e:
+    print("Unable to import RPi.GPIO, using GPIO emulation")
+    from octoprint_airfilter.FakeGpio import FakeGpio as FakeGpio
+    GPIO = FakeGpio()
+
+
+
+class AirfilterPlugin(
     octoprint.plugin.AssetPlugin,
-    octoprint.plugin.TemplatePlugin
+    octoprint.plugin.EventHandlerPlugin,
+    octoprint.plugin.SettingsPlugin,
+    octoprint.plugin.StartupPlugin,
+    octoprint.plugin.TemplatePlugin,
 ):
+    pin = None
+    pin_string = '-1'
+    pin_number = -1
+    use_pwm = False
+    invert = False
+    is_on = False
+    printing = False
+
+    def initialize_output(self):
+        print('Initializing outputs')
+        print(self._settings.get([], merged=True, asdict=True))
+        self.use_pwm = self._settings.get_boolean(['is_pwm'], merged=True)
+        pwm_frequency = 0
+        if self._settings.get(['pwm_frequency']) is not None:
+            pwm_frequency = int(self._settings.get(['pwm_frequency'], merged=True))
+
+        if self.pin_string != self._settings.get(['pin_number'], merged=True):
+            if self.pin is None:
+                if self.pin_number >= 0:
+                    GPIO.output(self.pin_number, not self.invert)
+            else:
+                self.pin.stop()
+                if self.invert:
+                    GPIO.output(self.pin_number, True)
+
+            self.pin_string = self._settings.get(['pin_number'], merged=True)
+            if self.pin_string == None or len(self.pin_string) == 0:
+                return
+
+            self.pin_number = int(self.pin_string)
+            if self.pin_number < 0:
+                return
+
+            if self.use_pwm:
+                self.pin = GPIO.PWM(self.pin_number, pwm_frequency)
+        elif self.use_pwm and not self._settings.get_boolean(['is_pwm']):
+            # Stop using PWM
+            self.pin.stop()
+            self.pin = None
+        elif not self.use_pwm and self._settings.get_boolean(['is_pwm']):
+            # Start using PWM
+            self.pin = GPIO.PWM(self.pin_number, pwm_frequency)
+
+        if self.pin is not None:
+            self.pin.ChangeFrequency(pwm_frequency)
+
+        self.invert = self._settings.get(['invert'], merged=True)
+        self.update_output()
+
+    def update_output(self):
+        if self.is_on:
+            pass
+
+    ##~~ EventHandler mixin
+    def on_event(self, event, payload):
+        if event == 'PrintStarted':
+            self.printing = True
+        elif event == 'PrintFailed' or event == 'PrintDone' or event == 'PrintCancelled':
+            self.print = False
 
     ##~~ SettingsPlugin mixin
 
     def get_settings_defaults(self):
         return {
-            'pin': None,
+            'pin_number': None,
             'invert': False,
             'is_pwm': True,
-            'pwm_frequency': 5000,
+            'pwm_frequency': 1000,
             'pwm_duty_cycle': 90,
             'enable_temperature_threshold': False,
             'temperature_threshold': 60,
@@ -33,10 +104,19 @@ class AirfilterPlugin(octoprint.plugin.SettingsPlugin,
             'print_end_delay': 600,
         }
 
+    def on_settings_save(self, data):
+        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+        self.initialize_output()
+
+
     def get_template_configs(self):
         return [
             dict(type="settings", custom_bindings=False),
         ]
+
+    ##~~ StartupPlugin mixin
+    def on_after_startup(self):
+        self.initialize_output()
 
     ##~~ AssetPlugin mixin
 

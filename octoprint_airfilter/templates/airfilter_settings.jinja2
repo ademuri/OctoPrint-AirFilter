@@ -2,9 +2,9 @@
 <form class="form-horizontal">
   <fieldset class="airfilter">
     <div class="control-group">
-        <label class="control-label">{{ _('Pin') }}</label>
+        <label class="control-label">{{ _('Pin Number') }} (BCM)</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Which Raspberry Pi GPIO pin your air filter is attached to.') }}">
-            <input type="number" data-bind="value: settings.plugins.airfilter.pin">
+            <input type="number" data-bind="value: settings.plugins.airfilter.pin_number">
         </div>
     </div>
 
@@ -19,7 +19,7 @@
   <fieldset class="airfilter">
     <div class="control-group">
         <label class="control-label">{{ _('Is PWM') }}</label>
-        <div class="controls" data-toggle="tooltip" title="{{ _('Whether the output pin should use PWM to control the speed.') }}">
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether the output pin should use (software) PWM to control the speed.') }}">
             <input type="checkbox" data-bind="checked: settings.plugins.airfilter.is_pwm">
         </div>
     </div>
@@ -42,14 +42,14 @@
 
   <fieldset class="airfilter">
     <div class="control-group">
-        <label class="control-label">{{ _('Enable hotend temperature threshold') }}</label>
+        <label class="control-label">{{ _('Enable temperature threshold') }}</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Whether to turn on the air filter when the hotend is above a set temperature.') }}">
             <input type="checkbox" data-bind="checked: settings.plugins.airfilter.enable_temperature_threshold">
         </div>
     </div>
 
     <div class="control-group">
-        <label class="control-label">{{ _('Hotend temperature threshold') }}</label>
+        <label class="control-label">{{ _('Temperature threshold') }}</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Turn on the air filter when the hotend is above this temperature') }}">
             <input type="number" data-bind="value: settings.plugins.airfilter.temperature_threshold, enable: settings.plugins.airfilter.enable_temperature_threshold">
         </div>
@@ -59,14 +59,14 @@
 
   <fieldset class="airfilter">
     <div class="control-group">
-        <label class="control-label">{{ _('Turn on at print start') }}</label>
+        <label class="control-label">{{ _('Print start trigger') }}</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Whether to turn on the air filter when the hotend is above a set temperature.') }}">
             <input type="checkbox" data-bind="checked: settings.plugins.airfilter.print_start_trigger">
         </div>
     </div>
 
     <div class="control-group">
-        <label class="control-label">{{ _('Print end delay, seconds') }}</label>
+        <label class="control-label">{{ _('Print end delay') }}, seconds</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Run the air filter for this long after the print ends.') }}">
             <input type="number" data-bind="value: settings.plugins.airfilter.print_end_delay, enable: settings.plugins.airfilter.print_start_trigger">
         </div>
