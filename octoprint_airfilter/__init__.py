@@ -10,6 +10,7 @@ from __future__ import absolute_import
 #
 # Take a look at the documentation on what other plugin mixins are available.
 
+import logging
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
 
@@ -19,10 +20,9 @@ from octoprint_airfilter.CountdownTimer import CountdownTimer
 try:
     __import__("RPi.GPIO as GPIO")
 except ImportError as e:
-    print("Unable to import RPi.GPIO, using GPIO emulation")
+    logging.getLogger(__name__).info("Unable to import RPi.GPIO, using GPIO emulation")
     from octoprint_airfilter.FakeGpio import FakeGpio as FakeGpio
     GPIO = FakeGpio()
-
 
 
 class AirfilterPlugin(
@@ -60,8 +60,6 @@ class AirfilterPlugin(
         self.is_on = False
 
     def initialize_output(self):
-        print('Initializing outputs')
-        print(self._settings.get([], merged=True, asdict=True))
         self.use_pwm = self._settings.get_boolean(['is_pwm'], merged=True)
         pwm_frequency = 0
         if self._settings.get(['pwm_frequency']) is not None:
@@ -105,7 +103,7 @@ class AirfilterPlugin(
             if 'tool0' in current_temperatures and 'actual' in current_temperatures['tool0']:
                 current_temperature = current_temperatures['tool0']['actual']
             else:
-                print('Warning: tool0->actual_temp not found in printer temps: ' + current_temperatures)
+                self._logger.warn('Warning: tool0->actual_temp not found in printer temps: %s', current_temperatures)
 
         if self.is_on:
             if enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
