@@ -30,6 +30,7 @@ class AirfilterPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.EventHandlerPlugin,
     octoprint.plugin.SettingsPlugin,
+    octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.StartupPlugin,
     octoprint.plugin.TemplatePlugin,
 ):
@@ -53,6 +54,8 @@ class AirfilterPlugin(
     self.filter_stopwatch.start()
 
   def turn_off(self):
+    if self.is_on:
+        self.save_timer()
     if self.pin is None:
       if self.pin_number >= 0:
         GPIO.output(self.pin_number, not self.invert)
@@ -180,8 +183,11 @@ class AirfilterPlugin(
     self.poll_timer = RepeatedTimer(20, self.update_output)
     self.poll_timer.start()
 
-    self.filter_life_timer = RepeatedTimer(1 * 60, self.save_timer)
+    self.filter_life_timer = RepeatedTimer(30 * 60, self.save_timer)
     self.filter_life_timer.start()
+
+  def on_shutdown(self):
+    self.save_timer()
 
   # ~~ AssetPlugin mixin
 
