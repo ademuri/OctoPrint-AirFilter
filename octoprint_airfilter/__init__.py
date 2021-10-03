@@ -20,7 +20,7 @@ from octoprint_airfilter.Stopwatch import Stopwatch
 # Hack to allow developing this plugin on non-RPi machines
 try:
   GPIO = importlib.import_module("RPi.GPIO")
-  GPIO.setmode(GPIO.BOARD)
+  GPIO.setmode(GPIO.BCM)
 except ImportError as e:
   logging.getLogger(__name__).info(
       "Unable to import RPi.GPIO, using GPIO emulation")
@@ -57,14 +57,14 @@ class AirfilterPlugin(
 
   def turn_off(self):
     if self.is_on:
-        self.save_timer()
-    if self.pin is None:
-      if self.pin_number >= 0:
-        GPIO.output(self.pin_number, not self.invert)
-    else:
-      self.pin.stop()
-      if self.invert:
-        GPIO.output(self.pin_number, True)
+      self.save_timer()
+      if self.pin is None:
+        if self.pin_number >= 0:
+          GPIO.output(self.pin_number, not self.invert)
+      else:
+        self.pin.stop()
+        if self.invert:
+          GPIO.output(self.pin_number, True)
     self.is_on = False
     self.filter_stopwatch.stop()
 
@@ -84,6 +84,7 @@ class AirfilterPlugin(
       self.pin_number = int(self.pin_string)
       if self.pin_number < 0:
         return
+      GPIO.setup(self.pin_number, GPIO.OUT)
 
       if self.use_pwm:
         self.pin = GPIO.PWM(self.pin_number, pwm_frequency)
