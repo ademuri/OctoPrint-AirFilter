@@ -18,7 +18,7 @@ class CountdownTimer:
   def set_interval(self, interval):
       self.interval = interval
 
-  def expired(self) -> bool:
+  def expired(self):
     if self.read:
       return False
 
