@@ -230,6 +230,9 @@ class AirfilterPlugin(
 
   def on_shutdown(self):
     self.save_timer()
+    self.turn_off()
+    if self.pin_number != None and self.pin_number >= 0:
+      GPIO.cleanup(self.pin_number)
 
   # ~~ AssetPlugin mixin
 

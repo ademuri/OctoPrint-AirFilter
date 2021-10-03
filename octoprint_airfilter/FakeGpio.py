@@ -17,6 +17,9 @@ class FakeGpio:
   def output(self, pin_number, value):
     self.logger_.info(f'Set pin {pin_number} to {1 if value else 0}')
 
+  def cleanup(self, pin_number):
+    self.logger_.info(f'Cleanup pin {pin_number}')
+
   def PWM(self, pin_number, pwm_frequency):
     return FakePwm(pin_number, pwm_frequency)
 
