@@ -9,6 +9,7 @@ from __future__ import absolute_import
 #
 # Take a look at the documentation on what other plugin mixins are available.
 
+import importlib
 import logging
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
@@ -18,11 +19,12 @@ from octoprint_airfilter.Stopwatch import Stopwatch
 
 # Hack to allow developing this plugin on non-RPi machines
 try:
-  __import__("RPi.GPIO as GPIO")
+  GPIO = importlib.import_module("RPi.GPIO")
+  GPIO.setmode(GPIO.BOARD)
 except ImportError as e:
   logging.getLogger(__name__).info(
       "Unable to import RPi.GPIO, using GPIO emulation")
-  from octoprint_airfilter.FakeGpio import FakeGpio as FakeGpio
+  FakeGpio = importlib.import_module("octoprint_airfilter.FakeGpio").FakeGpio
   GPIO = FakeGpio()
 
 
