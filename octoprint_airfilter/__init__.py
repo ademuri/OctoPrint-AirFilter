@@ -1,6 +1,5 @@
 # coding=utf-8
 from __future__ import absolute_import
-#import RPi.GPIO as GPIO
 
 # (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
@@ -15,6 +14,7 @@ import octoprint.plugin
 from octoprint.util import RepeatedTimer
 
 from octoprint_airfilter.CountdownTimer import CountdownTimer
+from octoprint_airfilter.Stopwatch import Stopwatch
 
 # Hack to allow developing this plugin on non-RPi machines
 try:
@@ -42,6 +42,7 @@ class AirfilterPlugin(
   printing = False
   print_end_timer = None
   poll_timer = None
+  filter_stopwatch = Stopwatch()
 
   def turn_on(self):
     if self.pin == None:
@@ -49,6 +50,7 @@ class AirfilterPlugin(
     else:
       self.pin.start(self._settings.get_int(['pwm_duty_cycle']))
     self.is_on = True
+    self.filter_stopwatch.start()
 
   def turn_off(self):
     if self.pin is None:
@@ -59,6 +61,7 @@ class AirfilterPlugin(
       if self.invert:
         GPIO.output(self.pin_number, True)
     self.is_on = False
+    self.filter_stopwatch.stop()
 
   def initialize_output(self):
     self.use_pwm = self._settings.get_boolean(['is_pwm'], merged=True)
@@ -125,6 +128,15 @@ class AirfilterPlugin(
       elif enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
         self.turn_on()
 
+  def save_timer(self):
+      current_timer_life = self._settings.get_float(['filter_life'], min=0.0, merged=True)
+      self.filter_stopwatch.stop()
+      if self.filter_stopwatch.get() > 0:
+        self._settings.set_float(['filter_life'], current_timer_life + self.filter_stopwatch.get())
+        self._settings.save()
+      self.filter_stopwatch.reset()
+      self.filter_stopwatch.start()
+
   # ~~ EventHandler mixin
   def on_event(self, event, payload):
     if event == 'PrintStarted':
@@ -148,6 +160,7 @@ class AirfilterPlugin(
         'temperature_threshold': 60,
         'print_start_trigger': True,
         'print_end_delay': 600,
+        'filter_life': 0.0,
     }
 
   def on_settings_save(self, data):
@@ -166,6 +179,9 @@ class AirfilterPlugin(
     self.initialize_output()
     self.poll_timer = RepeatedTimer(20, self.update_output)
     self.poll_timer.start()
+
+    self.filter_life_timer = RepeatedTimer(1 * 60, self.save_timer)
+    self.filter_life_timer.start()
 
   # ~~ AssetPlugin mixin
 

@@ -72,4 +72,13 @@
         </div>
     </div>
   </fieldset>
+
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Filter Life') }}, hours</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The number of hours that this filter has run for') }}">
+            <input type="number" readonly data-bind="value: parseFloat(settings.plugins.airfilter.filter_life().toFixed(1))">
+        </div>
+    </div>
+  </fieldset>
 </form>
