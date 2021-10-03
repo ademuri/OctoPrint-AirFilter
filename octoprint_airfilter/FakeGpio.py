@@ -6,8 +6,13 @@ import logging
 class FakeGpio:
   """Emulation for Raspberry PI GPIO"""
 
+  OUT = 'OUT'
+
   def __init__(self):
     self.logger_ = logging.getLogger('octoprint.plugins.airfilter')
+
+  def setup(self, pin_number, type):
+    self.logger_.info(f'Configure pin {pin_number} as type {type}')
 
   def output(self, pin_number, value):
     self.logger_.info(f'Set pin {pin_number} to {1 if value else 0}')

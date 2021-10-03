@@ -9,6 +9,7 @@ from __future__ import absolute_import
 #
 # Take a look at the documentation on what other plugin mixins are available.
 
+import flask
 import importlib
 import logging
 import octoprint.plugin
@@ -32,6 +33,7 @@ class AirfilterPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.EventHandlerPlugin,
     octoprint.plugin.SettingsPlugin,
+    octoprint.plugin.SimpleApiPlugin,
     octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.StartupPlugin,
     octoprint.plugin.TemplatePlugin,
@@ -42,6 +44,8 @@ class AirfilterPlugin(
   use_pwm = False
   invert = False
   is_on = False
+  # Whether the air filter was manually turned on in the UI
+  manual_on = False
   printing = False
   print_end_timer = None
   poll_timer = None
@@ -67,6 +71,7 @@ class AirfilterPlugin(
           GPIO.output(self.pin_number, True)
     self.is_on = False
     self.filter_stopwatch.stop()
+    self.manual_on = False
 
   def initialize_output(self):
     self.use_pwm = self._settings.get_boolean(['is_pwm'], merged=True)
@@ -103,6 +108,9 @@ class AirfilterPlugin(
     self.update_output()
 
   def update_output(self):
+    if self.is_on and self.manual_on:
+      return
+
     print_start_trigger = self._settings.get_boolean(['print_start_trigger'])
     enable_temperature_threshold = self._settings.get_boolean(
         ['enable_temperature_threshold'])
@@ -177,6 +185,37 @@ class AirfilterPlugin(
     return [
         dict(type="settings", custom_bindings=False),
     ]
+
+  # ~~ SimpleApiPlugin mixin
+  def get_api_commands(self):
+    return dict(
+      set=["state"],
+      toggle=[],
+    )
+
+  def on_api_command(self, command, data):
+    if command == 'set':
+      if not 'state' in data or not (data['state'] in [True, False]):
+        raise RuntimeError('Invalid set request: %s', data)
+      if data['state'] is True:
+        self.turn_on()
+        self.manual_on = True
+      else:
+        # TODO: if there is currently a trigger making the filter be on, ignore it until it goes away
+        self.turn_off()
+
+    elif command == 'toggle':
+      if self.is_on:
+        self.turn_off()
+      else:
+        self.turn_on()
+        self.manual_on = True
+
+    else:
+      raise RuntimeError('Unrecognized request: %s, %s', command, data)
+  
+  def on_api_get(self, request):
+    return flask.jsonify(state=self.is_on)
 
   # ~~ StartupPlugin mixin
   def on_after_startup(self):
