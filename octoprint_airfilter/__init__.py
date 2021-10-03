@@ -11,6 +11,9 @@ from __future__ import absolute_import
 # Take a look at the documentation on what other plugin mixins are available.
 
 import octoprint.plugin
+from octoprint.util import RepeatedTimer
+
+from octoprint_airfilter.CountdownTimer import CountdownTimer
 
 # Hack to allow developing this plugin on non-RPi machines
 try:
@@ -36,6 +39,25 @@ class AirfilterPlugin(
     invert = False
     is_on = False
     printing = False
+    print_end_timer = None
+    poll_timer = None
+
+    def turn_on(self):
+        if self.pin == None:
+            GPIO.output(self.pin_number, not self.invert)
+        else:
+            self.pin.start(self._settings.get_int(['pwm_duty_cycle']))
+        self.is_on = True
+
+    def turn_off(self):
+        if self.pin is None:
+            if self.pin_number >= 0:
+                GPIO.output(self.pin_number, not self.invert)
+        else:
+            self.pin.stop()
+            if self.invert:
+                GPIO.output(self.pin_number, True)
+        self.is_on = False
 
     def initialize_output(self):
         print('Initializing outputs')
@@ -46,13 +68,7 @@ class AirfilterPlugin(
             pwm_frequency = int(self._settings.get(['pwm_frequency'], merged=True))
 
         if self.pin_string != self._settings.get(['pin_number'], merged=True):
-            if self.pin is None:
-                if self.pin_number >= 0:
-                    GPIO.output(self.pin_number, not self.invert)
-            else:
-                self.pin.stop()
-                if self.invert:
-                    GPIO.output(self.pin_number, True)
+            self.turn_off()
 
             self.pin_string = self._settings.get(['pin_number'], merged=True)
             if self.pin_string == None or len(self.pin_string) == 0:
@@ -79,15 +95,44 @@ class AirfilterPlugin(
         self.update_output()
 
     def update_output(self):
+        print_start_trigger = self._settings.get_boolean(['print_start_trigger'])
+        enable_temperature_threshold = self._settings.get_boolean(['enable_temperature_threshold'])
+        temperature_threshold = self._settings.get_int(['temperature_threshold'])
+        current_temperatures = None
+        current_temperature = 0
+        if self._printer.is_operational():
+            current_temperatures = self._printer.get_current_temperatures()
+            if 'tool0' in current_temperatures and 'actual' in current_temperatures['tool0']:
+                current_temperature = current_temperatures['tool0']['actual']
+            else:
+                print('Warning: tool0->actual_temp not found in printer temps: ' + current_temperatures)
+
         if self.is_on:
-            pass
+            if enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
+                return
+
+            if print_start_trigger and not self.printing and self.print_end_timer.expired():
+                self.turn_off()
+            elif current_temperature != None and current_temperature < temperature_threshold:
+                if not (print_start_trigger and self.printing):
+                    self.turn_off()
+
+        else:
+            # not self.is_on
+            if print_start_trigger and self.printing:
+                self.turn_on()
+            elif enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
+                self.turn_on()
 
     ##~~ EventHandler mixin
     def on_event(self, event, payload):
         if event == 'PrintStarted':
             self.printing = True
+            self.update_output()
         elif event == 'PrintFailed' or event == 'PrintDone' or event == 'PrintCancelled':
-            self.print = False
+            self.printing = False
+            self.print_end_timer.reset()
+            self.update_output()
 
     ##~~ SettingsPlugin mixin
 
@@ -116,7 +161,10 @@ class AirfilterPlugin(
 
     ##~~ StartupPlugin mixin
     def on_after_startup(self):
+        self.print_end_timer = CountdownTimer(self._settings.get_int(['print_end_delay']))
         self.initialize_output()
+        self.poll_timer = RepeatedTimer(20, self.update_output)
+        self.poll_timer.start()
 
     ##~~ AssetPlugin mixin
 
