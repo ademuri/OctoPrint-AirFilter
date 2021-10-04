@@ -15,6 +15,7 @@ $(function() {
         self.is_on = ko.observable(false);
         self.sgp_raw = ko.observable(0);
         self.sgp_index = ko.observable(0);
+        self.history = ko.observableArray();
 
         self.prettyState = ko.pureComputed(() => {
             return self.is_on() ? 'On' : 'Off';
@@ -22,7 +23,6 @@ $(function() {
 
         self.updateState = () => {
             return $.getJSON("/plugin/airfilter/state", (data) => {
-                console.log(data);
                 self.is_on(data['state']);
                 if (data['sgp_raw'] > 0) {
                     self.sgp_raw(data['sgp_raw']);
@@ -33,9 +33,16 @@ $(function() {
             });
         }
 
+        self.getHistory = () => {
+            $.getJSON("/plugin/airfilter/history", (data) => {
+                self.history(data.history);
+            });
+        };
+
         self.onAfterBinding = () => {
             self.updateState();
             setInterval(self.updateState, 60 * 1000);
+            setTimeout(self.getHistory, 0);
         }
 
         self.toggle = () => {

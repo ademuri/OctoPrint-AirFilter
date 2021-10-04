@@ -11,4 +11,23 @@
           <input type="number" readonly data-bind="value: sgp_raw">
       </div>
   </div>
+
+  <div id="air-filter-history" data-bind="onload: getHistory">
+    <table class="air-filter-table">
+      <thead>
+        <tr>
+          <th style="padding: 0em 0.5em">Time</th>
+          <th>Index</th>
+          <th>Raw</th>
+        </tr>
+      </thead>
+      <tbody data-bind="foreach: history">
+        <tr>
+          <td data-bind="text: time"></td>
+          <td data-bind="text: index"></td>
+          <td data-bind="text: raw"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

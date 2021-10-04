@@ -4,4 +4,9 @@ fieldset.airfilter {
   padding: 0 0.75em 0.625em 0.75em;
   border-width: 2px 0px 0px;
   border-style: groove;
-}
+};
+
+.air-filter-table th,
+.air-filter-table td {
+  padding: 1em;
+};

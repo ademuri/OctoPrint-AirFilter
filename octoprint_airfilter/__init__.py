@@ -13,6 +13,7 @@ import flask
 import importlib
 import logging
 import time
+import datetime
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
 
@@ -73,8 +74,8 @@ class AirfilterPlugin(
   sgp_index_buffer = []
   sgp_raw_buffer = []
   sgp_last_history = 0
-  sgp_history_interval = 5
-  sgp_history_size = 2
+  sgp_history_interval = 15 * 60
+  sgp_history_size = 100
 
   def turn_on(self):
     if self.pin == None:
@@ -214,13 +215,6 @@ class AirfilterPlugin(
         dict(type="settings", custom_bindings=False),
     ]
 
-  # ~~ SimpleApiPlugin mixin
-  def get_api_commands(self):
-    return dict(
-        set=["state"],
-        toggle=[],
-    )
-
   @octoprint.plugin.BlueprintPlugin.route("/set", methods=["POST"])
   def set_filter(self):
     if not 'state' in flask.request.values or not (flask.request.get('state') in [True, False]):
@@ -250,6 +244,15 @@ class AirfilterPlugin(
       state['sgp_index'] = self.sgp_index
       state['sgp_raw'] = self.sgp_raw
     return flask.jsonify(state)
+
+  @octoprint.plugin.BlueprintPlugin.route("/history", methods=["GET"])
+  def get_history(self):
+    history = []
+    for i in range(0, len(self.sgp_raw_history)):
+      history_time = datetime.datetime.now() - datetime.timedelta(seconds = i * self.sgp_history_interval + time.monotonic() - self.sgp_last_history)
+      history.append({'index': self.sgp_index_history[i], 'raw': self.sgp_raw_history[i], 'time': history_time.strftime('%H:%M')})
+    
+    return flask.jsonify({'history': history})
 
   def update_sgp40(self):
     self.sgp_raw = self.sgp.raw
