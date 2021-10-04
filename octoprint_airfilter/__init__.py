@@ -17,6 +17,7 @@ from octoprint.util import RepeatedTimer
 
 from octoprint_airfilter.CountdownTimer import CountdownTimer
 from octoprint_airfilter.Stopwatch import Stopwatch
+from octoprint_airfilter.FakeSgp40 import FakeSgp40
 
 # Hack to allow developing this plugin on non-RPi machines
 try:
@@ -24,10 +25,21 @@ try:
   GPIO.setmode(GPIO.BCM)
 except ImportError as e:
   logging.getLogger(__name__).info(
-      "Unable to import RPi.GPIO, using GPIO emulation")
+      "Unable to import RPi.GPIO, using GPIO emulation", exc_info=True)
   FakeGpio = importlib.import_module("octoprint_airfilter.FakeGpio").FakeGpio
   GPIO = FakeGpio()
 
+board = None
+busio = None
+adafruit_sgp40 = None
+try:
+  board = importlib.import_module("board")
+  busio = importlib.import_module("busio")
+  adafruit_sgp40 = importlib.import_module("adafruit_sgp40")
+except ImportError as e:
+  logging.getLogger(__name__).info(
+      "Unable to import SGP40 support libraries", exc_info=True)
+      
 
 class AirfilterPlugin(
     octoprint.plugin.AssetPlugin,
@@ -50,6 +62,11 @@ class AirfilterPlugin(
   print_end_timer = None
   poll_timer = None
   filter_stopwatch = Stopwatch()
+
+  # Air quality sensor SGP40
+  sgp = None
+  sgp_index = -1
+  sgp_raw = -1
 
   def turn_on(self):
     if self.pin == None:
@@ -175,6 +192,7 @@ class AirfilterPlugin(
         'print_start_trigger': True,
         'print_end_delay': 600,
         'filter_life': 0.0,
+        'fake_sgp40': False,
     }
 
   def on_settings_save(self, data):
@@ -215,7 +233,16 @@ class AirfilterPlugin(
       raise RuntimeError('Unrecognized request: %s, %s', command, data)
   
   def on_api_get(self, request):
-    return flask.jsonify(state=self.is_on)
+    state = dict()
+    state['state'] = self.is_on
+    if self.sgp != None:
+      state['sgp_index'] = self.sgp_index
+      state['sgp_raw'] = self.sgp_raw
+    return flask.jsonify(state)
+
+  def update_sgp40(self):
+    self.sgp_raw = self.sgp.raw
+    self.sgp_index = self.sgp.measure_index()
 
   # ~~ StartupPlugin mixin
   def on_after_startup(self):
@@ -227,6 +254,20 @@ class AirfilterPlugin(
 
     self.filter_life_timer = RepeatedTimer(30 * 60, self.save_timer)
     self.filter_life_timer.start()
+
+    # Note: only run update_sgp40 in the timer, because it is blocking which can cause issues.
+    if adafruit_sgp40 == None:
+      if self._settings.get_boolean(['fake_sgp40']):
+        self._logger.info("Using fake SGP40 air quality sensor")
+        self.sgp = FakeSgp40()
+    else:
+      self._logger.info('Initializing SGP40 air quality sensor')
+      i2c = busio.I2C(board.SCL, board.SDA)
+      self.sgp = adafruit_sgp40.SGP40(i2c)
+      
+    if self.sgp != None:
+      self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)
+      self.sgp40_timer.start()
 
   def on_shutdown(self):
     self.save_timer()

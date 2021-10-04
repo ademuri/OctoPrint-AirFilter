@@ -81,4 +81,14 @@
         </div>
     </div>
   </fieldset>
+
+
+  <fieldset class="airfilter">
+    <div class="control-group">
+        <label class="control-label">{{ _('Fake Sgp40') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Whether to use a fake SGP40 air quality sensor, for development purposes') }}">
+            <input type="checkbox" data-bind="checked: settings.plugins.airfilter.fake_sgp40">
+        </div>
+    </div>
+  </fieldset>
 </form>

@@ -1,0 +1,14 @@
+<div>
+  <div class="control-group">
+      <label class="control-label">{{ _('SGP40 Index') }}</label>
+      <div class="controls" data-toggle="tooltip" title="{{ _('SGP40 index value, between 0 and 500. 100 is average.') }}">
+          <input type="number" readonly data-bind="value: sgp_index">
+      </div>
+  </div>
+  <div class="control-group">
+      <label class="control-label">{{ _('SGP40 Raw') }}</label>
+      <div class="controls" data-toggle="tooltip" title="{{ _('SGP40 raw value (log scale), lower is more VOC.') }}">
+          <input type="number" readonly data-bind="value: sgp_raw">
+      </div>
+  </div>
+</div>

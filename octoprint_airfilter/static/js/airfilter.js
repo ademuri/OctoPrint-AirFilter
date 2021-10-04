@@ -13,6 +13,8 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         self.is_on = ko.observable(false);
+        self.sgp_raw = ko.observable(0);
+        self.sgp_index = ko.observable(0);
 
         self.prettyState = ko.pureComputed(() => {
             return self.is_on() ? 'On' : 'Off';
@@ -20,7 +22,14 @@ $(function() {
 
         self.updateState = () => {
             return $.getJSON("/api/plugin/airfilter", (data) => {
+                console.log(data);
                 self.is_on(data['state']);
+                if (data['sgp_raw'] > 0) {
+                    self.sgp_raw(data['sgp_raw']);
+                }
+                if (data['sgp_index'] > 0) {
+                    self.sgp_index(data['sgp_index']);
+                }
             });
         }
 
@@ -53,6 +62,6 @@ $(function() {
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [ /* "loginStateViewModel", "settingsViewModel" */ ],
         // Elements to bind to, e.g. #settings_plugin_airfilter, #tab_plugin_airfilter, ...
-        elements: ["#air-filter-status"]
+        elements: ["#air-filter-status", "#tab_plugin_airfilter"],
     });
 });
