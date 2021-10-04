@@ -169,6 +169,7 @@ class AirfilterPlugin(
         self.turn_on()
 
   def save_timer(self):
+    running = self.filter_stopwatch.is_running()
     current_timer_life = self._settings.get_float(
         ['filter_life'], min=0.0, merged=True)
     self.filter_stopwatch.stop()
@@ -177,7 +178,8 @@ class AirfilterPlugin(
           ['filter_life'], current_timer_life + self.filter_stopwatch.get())
       self._settings.save()
     self.filter_stopwatch.reset()
-    self.filter_stopwatch.start()
+    if running:
+      self.filter_stopwatch.start()
 
   # ~~ EventHandler mixin
   def on_event(self, event, payload):
