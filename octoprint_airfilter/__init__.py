@@ -12,6 +12,7 @@ from __future__ import absolute_import
 import flask
 import importlib
 import logging
+import time
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
 
@@ -67,6 +68,13 @@ class AirfilterPlugin(
   sgp = None
   sgp_index = -1
   sgp_raw = -1
+  sgp_index_history = []
+  sgp_raw_history = []
+  sgp_index_buffer = []
+  sgp_raw_buffer = []
+  sgp_last_history = 0
+  sgp_history_interval = 5
+  sgp_history_size = 2
 
   def turn_on(self):
     if self.pin == None:
@@ -243,6 +251,34 @@ class AirfilterPlugin(
   def update_sgp40(self):
     self.sgp_raw = self.sgp.raw
     self.sgp_index = self.sgp.measure_index()
+    self.sgp_raw_buffer.append(self.sgp_raw)
+    self.sgp_index_buffer.append(self.sgp_index)
+
+    now = time.monotonic()
+    buffer_full = False
+    if self.sgp_last_history <= 0:
+      # Align to even intervals (e.g. every 15 minutes means 0, 15, 30, and 45 minutes past the hour)
+      start_at_minutes = round(self.sgp_history_interval / 60)
+      if start_at_minutes <= 0:
+        start_at_minutes = 1
+      if time.localtime().tm_min % start_at_minutes <= 0:
+        buffer_full = True
+    else:
+      if now - self.sgp_last_history >= self.sgp_history_interval:
+        buffer_full = True
+
+    if buffer_full:
+      self.sgp_last_history = now
+      self.sgp_raw_history.insert(0, sum(self.sgp_raw_buffer) / len(self.sgp_raw_buffer))
+      self.sgp_raw_buffer.clear()
+      self.sgp_index_history.insert(0, sum(self.sgp_index_buffer) / len(self.sgp_index_buffer))
+      self.sgp_index_buffer.clear()
+
+      if len(self.sgp_raw_history) > self.sgp_history_size:
+        self.sgp_raw_history = self.sgp_raw_history[0:self.sgp_history_size]
+
+      if len(self.sgp_index_history) > self.sgp_history_size:
+        self.sgp_index_history = self.sgp_index_history[0:self.sgp_history_size]
 
   # ~~ StartupPlugin mixin
   def on_after_startup(self):
