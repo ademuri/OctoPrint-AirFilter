@@ -21,7 +21,7 @@ $(function() {
         });
 
         self.updateState = () => {
-            return $.getJSON("/api/plugin/airfilter", (data) => {
+            return $.getJSON("/plugin/airfilter/state", (data) => {
                 console.log(data);
                 self.is_on(data['state']);
                 if (data['sgp_raw'] > 0) {
@@ -41,7 +41,7 @@ $(function() {
         self.toggle = () => {
             const request = {"command": "toggle"};
             $.ajax({
-                url: "/api/plugin/airfilter",
+                url: "/plugin/airfilter/toggle",
                 type: "POST",
                 data: ko.toJSON(request),
                 contentType:"application/json; charset=utf-8",

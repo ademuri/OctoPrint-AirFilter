@@ -40,13 +40,13 @@ try:
 except ImportError as e:
   logging.getLogger(__name__).info(
       "Unable to import SGP40 support libraries", exc_info=True)
-      
+
 
 class AirfilterPlugin(
     octoprint.plugin.AssetPlugin,
+    octoprint.plugin.BlueprintPlugin,
     octoprint.plugin.EventHandlerPlugin,
     octoprint.plugin.SettingsPlugin,
-    octoprint.plugin.SimpleApiPlugin,
     octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.StartupPlugin,
     octoprint.plugin.TemplatePlugin,
@@ -168,13 +168,15 @@ class AirfilterPlugin(
         self.turn_on()
 
   def save_timer(self):
-      current_timer_life = self._settings.get_float(['filter_life'], min=0.0, merged=True)
-      self.filter_stopwatch.stop()
-      if self.filter_stopwatch.get() > 0:
-        self._settings.set_float(['filter_life'], current_timer_life + self.filter_stopwatch.get())
-        self._settings.save()
-      self.filter_stopwatch.reset()
-      self.filter_stopwatch.start()
+    current_timer_life = self._settings.get_float(
+        ['filter_life'], min=0.0, merged=True)
+    self.filter_stopwatch.stop()
+    if self.filter_stopwatch.get() > 0:
+      self._settings.set_float(
+          ['filter_life'], current_timer_life + self.filter_stopwatch.get())
+      self._settings.save()
+    self.filter_stopwatch.reset()
+    self.filter_stopwatch.start()
 
   # ~~ EventHandler mixin
   def on_event(self, event, payload):
@@ -215,32 +217,33 @@ class AirfilterPlugin(
   # ~~ SimpleApiPlugin mixin
   def get_api_commands(self):
     return dict(
-      set=["state"],
-      toggle=[],
+        set=["state"],
+        toggle=[],
     )
 
-  def on_api_command(self, command, data):
-    if command == 'set':
-      if not 'state' in data or not (data['state'] in [True, False]):
-        raise RuntimeError('Invalid set request: %s', data)
-      if data['state'] is True:
-        self.turn_on()
-        self.manual_on = True
-      else:
-        # TODO: if there is currently a trigger making the filter be on, ignore it until it goes away
-        self.turn_off()
-
-    elif command == 'toggle':
-      if self.is_on:
-        self.turn_off()
-      else:
-        self.turn_on()
-        self.manual_on = True
-
+  @octoprint.plugin.BlueprintPlugin.route("/set", methods=["POST"])
+  def set_filter(self):
+    if not 'state' in flask.request.values or not (flask.request.get('state') in [True, False]):
+      raise RuntimeError('Invalid set request: %s', flask.request.values)
+    if flask.request.get('state')['state'] is True:
+      self.turn_on()
+      self.manual_on = True
     else:
-      raise RuntimeError('Unrecognized request: %s, %s', command, data)
-  
-  def on_api_get(self, request):
+      # TODO: if there is currently a trigger making the filter be on, ignore it until it goes away
+      self.turn_off()
+    return flask.jsonify({'success': True})
+
+  @octoprint.plugin.BlueprintPlugin.route("/toggle", methods=["POST"])
+  def toggle_filter(self):
+    if self.is_on:
+      self.turn_off()
+    else:
+      self.turn_on()
+      self.manual_on = True
+    return flask.jsonify({'success': True})
+
+  @octoprint.plugin.BlueprintPlugin.route("/state", methods=["GET"])
+  def get_state(self):
     state = dict()
     state['state'] = self.is_on
     if self.sgp != None:
@@ -269,9 +272,11 @@ class AirfilterPlugin(
 
     if buffer_full:
       self.sgp_last_history = now
-      self.sgp_raw_history.insert(0, sum(self.sgp_raw_buffer) / len(self.sgp_raw_buffer))
+      self.sgp_raw_history.insert(
+          0, sum(self.sgp_raw_buffer) / len(self.sgp_raw_buffer))
       self.sgp_raw_buffer.clear()
-      self.sgp_index_history.insert(0, sum(self.sgp_index_buffer) / len(self.sgp_index_buffer))
+      self.sgp_index_history.insert(
+          0, sum(self.sgp_index_buffer) / len(self.sgp_index_buffer))
       self.sgp_index_buffer.clear()
 
       if len(self.sgp_raw_history) > self.sgp_history_size:
@@ -300,7 +305,7 @@ class AirfilterPlugin(
       self._logger.info('Initializing SGP40 air quality sensor')
       i2c = busio.I2C(board.SCL, board.SDA)
       self.sgp = adafruit_sgp40.SGP40(i2c)
-      
+
     if self.sgp != None:
       self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)
       self.sgp40_timer.start()
