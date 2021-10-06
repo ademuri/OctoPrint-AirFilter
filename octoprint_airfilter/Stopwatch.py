@@ -8,17 +8,20 @@ class Stopwatch:
 
   elapsed_seconds_ = 0
   last_started_ = -1
+  is_running_ = False
 
   def __init__(self):
     pass
 
   def start(self):
+    self.is_running_ = True
     if self.last_started_ >= 0:
       return
 
     self.last_started_ = time.monotonic()
 
   def stop(self):
+    self.is_running_ = False
     if self.last_started_ < 0:
       return
 
@@ -29,6 +32,10 @@ class Stopwatch:
   def get(self):
     return self.elapsed_seconds_ / (60 * 60)
 
+  def is_running(self):
+      return self.is_running_
+
   def reset(self):
     self.last_started_ = -1
     self.elapsed_seconds_ = 0
+    self.is_running_ = False
