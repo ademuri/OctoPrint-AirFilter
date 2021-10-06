@@ -40,9 +40,10 @@ $(function() {
         };
 
         self.onAfterBinding = () => {
-            self.updateState();
+            setTimeout(self.updateState, 0);
             setInterval(self.updateState, 60 * 1000);
             setTimeout(self.getHistory, 0);
+            setInterval(self.getHistory, 5 * 60 * 1000);
         }
 
         self.toggle = () => {
