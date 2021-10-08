@@ -6,7 +6,8 @@
  */
 $(function() {
     function AirfilterViewModel(parameters) {
-        var self = this;
+        let self = this;
+        const colors = ["#F88", "#FB8", "#FF8", "#BF8", "#8F8"];
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -16,6 +17,10 @@ $(function() {
         self.sgp_raw = ko.observable(0);
         self.sgp_index = ko.observable(0);
         self.history = ko.observableArray();
+        self.indexMin = 0;
+        self.indexMax = 0;
+        self.rawMin = 0;
+        self.rawMax = 0;
 
         self.prettyState = ko.pureComputed(() => {
             return self.is_on() ? 'On' : 'Off';
@@ -35,6 +40,10 @@ $(function() {
 
         self.getHistory = () => {
             $.getJSON("/plugin/airfilter/history", (data) => {
+                self.indexMin = data.history.map(a => a.index).reduce((a, b) => Math.min(a, b));
+                self.indexMax = data.history.map(a => a.index).reduce((a, b) => Math.max(a, b));
+                self.rawMin = data.history.map(a => a.raw).reduce((a, b) => Math.min(a, b));
+                self.rawMax = data.history.map(a => a.raw).reduce((a, b) => Math.max(a, b));
                 self.history(data.history);
             });
         };
@@ -58,6 +67,14 @@ $(function() {
                     self.updateState();
                 }
               });
+        };
+
+        self.indexColor = (index) => {
+            return colors.reverse()[Math.round((index - self.indexMin) / (self.indexMax - self.indexMin) * (colors.length - 1))];
+        };
+
+        self.rawColor = (raw) => {
+            return colors[Math.round((raw - self.rawMin) / (self.rawMax - self.rawMin) * (colors.length - 1))];
         };
     }
 

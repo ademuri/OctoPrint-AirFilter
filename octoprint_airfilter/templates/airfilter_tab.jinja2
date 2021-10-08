@@ -16,7 +16,7 @@
     <table class="air-filter-table">
       <thead>
         <tr>
-          <th style="padding: 0em 0.5em">Time</th>
+          <th>Time</th>
           <th>Index</th>
           <th>Raw</th>
         </tr>
@@ -24,8 +24,8 @@
       <tbody data-bind="foreach: history">
         <tr>
           <td data-bind="text: time"></td>
-          <td data-bind="text: index"></td>
-          <td data-bind="text: raw"></td>
+          <td data-bind="text: parseFloat(index).toFixed(1), style: { 'background-color': $parent.indexColor(index) }"></td>
+          <td data-bind="text: parseFloat(raw).toFixed(0), style: { 'background-color': $parent.rawColor(raw) }"></td>
         </tr>
       </tbody>
     </table>
