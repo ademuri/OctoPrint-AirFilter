@@ -38,6 +38,7 @@ try:
   board = importlib.import_module("board")
   busio = importlib.import_module("busio")
   adafruit_sgp40 = importlib.import_module("adafruit_sgp40")
+  adafruit_htu21d = importlib.import_module("adafruit_htu21d")
 except ImportError as e:
   logging.getLogger(__name__).info(
       "Unable to import SGP40 support libraries", exc_info=True)
@@ -67,6 +68,7 @@ class AirfilterPlugin(
 
   # Air quality sensor SGP40
   sgp = None
+  temp_sensor = None
   sgp_index = -1
   sgp_raw = -1
   sgp_index_history = []
@@ -253,13 +255,18 @@ class AirfilterPlugin(
     for i in range(0, len(self.sgp_raw_history)):
       history_time = datetime.datetime.now() - datetime.timedelta(seconds = i * self.sgp_history_interval + time.monotonic() - self.sgp_last_history)
       history.append({'index': self.sgp_index_history[i], 'raw': self.sgp_raw_history[i], 'time': history_time.strftime('%H:%M')})
-    
+
     return flask.jsonify({'history': history})
 
   def update_sgp40(self):
     self.sgp_raw = self.sgp.raw
-    self.sgp_index = self.sgp.measure_index()
     self.sgp_raw_buffer.append(self.sgp_raw)
+
+    if self.temp_sensor == None:
+      self.sgp_index = self.sgp.measure_index()
+    else:
+      self.sgp_index = self.sgp.measure_index(temperature = self.temp_sensor.temperature, relative_humidity = self.temp_sensor.relative_humidity)
+
     self.sgp_index_buffer.append(self.sgp_index)
 
     now = time.monotonic()
@@ -310,6 +317,12 @@ class AirfilterPlugin(
       self._logger.info('Initializing SGP40 air quality sensor')
       i2c = busio.I2C(board.SCL, board.SDA)
       self.sgp = adafruit_sgp40.SGP40(i2c)
+      if adafruit_htu21d != None:
+        self._logger.info('Initializing HTU21D temperature sensor')
+        self.temp_sensor = adafruit_htu21d.HTU21D(i2c)
+
+
+
 
     if self.sgp != None:
       self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)

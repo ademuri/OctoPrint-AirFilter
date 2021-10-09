@@ -12,6 +12,10 @@ or manually using this URL:
 **TODO:** Describe how to install your plugin, if more needs to be done than just installing it via pip or through
 the plugin manager.
 
+```bash
+sudo pip3 install adafruit-circuitpython-htu21d
+```
+
 ## Configuration
 
 **TODO:** Describe your plugin's configuration options (if any).
