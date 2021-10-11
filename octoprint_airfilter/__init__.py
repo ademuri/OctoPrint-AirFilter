@@ -59,8 +59,9 @@ class AirfilterPlugin(
   use_pwm = False
   invert = False
   is_on = False
-  # Whether the air filter was manually turned on in the UI
+  # Whether the air filter was manually turned on/off in the UI
   manual_on = False
+  manual_off = False
   printing = False
   print_end_timer = None
   poll_timer = None
@@ -86,6 +87,7 @@ class AirfilterPlugin(
       self.pin.start(self._settings.get_int(['pwm_duty_cycle']))
     self.is_on = True
     self.filter_stopwatch.start()
+    self.manual_off = False
 
   def turn_off(self):
     if self.is_on:
@@ -169,6 +171,8 @@ class AirfilterPlugin(
         self.turn_on()
       elif enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
         self.turn_on()
+      else:
+        self.manual_off = False
 
   def save_timer(self):
     running = self.filter_stopwatch.is_running()
@@ -235,6 +239,7 @@ class AirfilterPlugin(
   def toggle_filter(self):
     if self.is_on:
       self.turn_off()
+      self.manual_off = True
     else:
       self.turn_on()
       self.manual_on = True
