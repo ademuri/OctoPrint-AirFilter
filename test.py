@@ -21,12 +21,14 @@ class FakePrinter(octoprint.printer.PrinterInterface):
 
 
 plugin = AirfilterPlugin()
+plugin._logger = logging.getLogger(AirfilterPlugin.__name__)
+plugin._printer = FakePrinter()
+
 settings = settings(init=True)
 plugin._settings = octoprint.plugin.plugin_settings_for_settings_plugin('airfilter', plugin, settings=settings)
 plugin._settings.set_boolean(['fake_sgp40'], True)
 plugin._settings.set_int([AirFilterSettings.PIN_NUMBER], 1)
-plugin._printer = FakePrinter()
-plugin._logger = logging.getLogger(AirfilterPlugin.__name__)
+
 plugin.on_after_startup()
 
 plugin.turn_on()

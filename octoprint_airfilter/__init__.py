@@ -20,6 +20,7 @@ from octoprint.util import RepeatedTimer
 from octoprint_airfilter.CountdownTimer import CountdownTimer
 from octoprint_airfilter.Stopwatch import Stopwatch
 from octoprint_airfilter.FakeSgp40 import FakeSgp40
+from octoprint_airfilter.settings import AirFilterSettings
 
 # Hack to allow developing this plugin on non-RPi machines
 try:
@@ -53,11 +54,8 @@ class AirfilterPlugin(
     octoprint.plugin.StartupPlugin,
     octoprint.plugin.TemplatePlugin,
 ):
+  filter_settings_ = None
   pin = None
-  pin_string = '-1'
-  pin_number = -1
-  use_pwm = False
-  invert = False
   is_on = False
   # Whether the air filter was manually turned on/off in the UI
   manual_on = False
@@ -82,9 +80,9 @@ class AirfilterPlugin(
 
   def turn_on(self):
     if self.pin == None:
-      GPIO.output(self.pin_number, not self.invert)
+      GPIO.output(self.filter_settings_.pin_number, not self.filter_settings_.invert)
     else:
-      self.pin.start(self._settings.get_int(['pwm_duty_cycle']))
+      self.pin.start(self.filter_settings_.pwm_duty_cycle)
     self.is_on = True
     self.filter_stopwatch.start()
     self.manual_off = False
@@ -93,49 +91,63 @@ class AirfilterPlugin(
     if self.is_on:
       self.save_timer()
       if self.pin is None:
-        if self.pin_number >= 0:
-          GPIO.output(self.pin_number, not self.invert)
+        if self.filter_settings_.pin_number >= 0:
+          GPIO.output(self.filter_settings_.pin_number, self.filter_settings_.invert)
       else:
         self.pin.stop()
-        if self.invert:
-          GPIO.output(self.pin_number, True)
+        if self.filter_settings_.invert:
+          GPIO.output(self.filter_settings_.pin_number, True)
     self.is_on = False
     self.filter_stopwatch.stop()
     self.manual_on = False
 
   def initialize_output(self):
-    self.use_pwm = self._settings.get_boolean(['is_pwm'], merged=True)
+    new_settings = AirFilterSettings(self._settings)
     pwm_frequency = 0
     if self._settings.get(['pwm_frequency']) is not None:
       pwm_frequency = int(self._settings.get(['pwm_frequency'], merged=True))
 
-    if self.pin_string != self._settings.get(['pin_number'], merged=True):
+    if self.filter_settings_ == None or self.filter_settings_.pin_number == None:
+      if new_settings.pin_number == None or new_settings.pin_number < 0:
+        return
+
+      GPIO.setup(new_settings.pin_number, GPIO.OUT)
+
+      if new_settings.is_pwm:
+        self.pin = GPIO.PWM(new_settings.pin_number, pwm_frequency)
+    elif new_settings.pin_number != self.filter_settings_.pin_number:
       self.turn_off()
 
-      self.pin_string = self._settings.get(['pin_number'], merged=True)
-      if self.pin_string == None or len(self.pin_string) == 0:
+      if new_settings.pin_number == None or new_settings.pin_number < 0:
         return
 
-      self.pin_number = int(self.pin_string)
-      if self.pin_number < 0:
-        return
-      GPIO.setup(self.pin_number, GPIO.OUT)
+      GPIO.setup(new_settings.pin_number, GPIO.OUT)
 
-      if self.use_pwm:
-        self.pin = GPIO.PWM(self.pin_number, pwm_frequency)
-    elif self.use_pwm and not self._settings.get_boolean(['is_pwm']):
+      if new_settings.is_pwm:
+        self.pin = GPIO.PWM(new_settings.pin_number, pwm_frequency)
+    elif self.filter_settings_.is_pwm and not new_settings.is_pwm:
       # Stop using PWM
       self.pin.stop()
       self.pin = None
-    elif not self.use_pwm and self._settings.get_boolean(['is_pwm']):
+      if self.is_on:
+        self.turn_on()
+    elif not self.filter_settings_.is_pwm and new_settings.is_pwm:
       # Start using PWM
-      self.pin = GPIO.PWM(self.pin_number, pwm_frequency)
+      self.pin = GPIO.PWM(self.filter_settings_.pin_number, pwm_frequency)
+      if self.is_on:
+        self.turn_on()
 
+    # TODO: only update if setting has been changed
     if self.pin is not None:
       self.pin.ChangeFrequency(pwm_frequency)
 
-    self.invert = self._settings.get(['invert'], merged=True)
+    pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle != self.filter_settings_.pwm_duty_cycle and self.is_on)
+    
+    self.filter_settings_ = new_settings
     self.update_output()
+    
+    if pwm_duty_changed:
+      self.turn_on()
 
   def update_output(self):
     if self.is_on and self.manual_on:
@@ -201,11 +213,11 @@ class AirfilterPlugin(
 
   def get_settings_defaults(self):
     return {
-        'pin_number': None,
-        'invert': False,
-        'is_pwm': True,
+        AirFilterSettings.PIN_NUMBER: None,
+        AirFilterSettings.IS_PWM: False,
+        AirFilterSettings.INVERT: True,
         'pwm_frequency': 1000,
-        'pwm_duty_cycle': 90,
+        AirFilterSettings.PWM_DUTY_CYCLE: 90,
         'enable_temperature_threshold': False,
         'temperature_threshold': 60,
         'print_start_trigger': True,
@@ -326,9 +338,6 @@ class AirfilterPlugin(
         self._logger.info('Initializing HTU21D temperature sensor')
         self.temp_sensor = adafruit_htu21d.HTU21D(i2c)
 
-
-
-
     if self.sgp != None:
       self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)
       self.sgp40_timer.start()
@@ -336,8 +345,8 @@ class AirfilterPlugin(
   def on_shutdown(self):
     self.save_timer()
     self.turn_off()
-    if self.pin_number != None and self.pin_number >= 0:
-      GPIO.cleanup(self.pin_number)
+    if self.filter_settings_.pin_number != None and self.filter_settings_.pin_number >= 0:
+      GPIO.cleanup(self.filter_settings_.pin_number)
 
   # ~~ AssetPlugin mixin
 
