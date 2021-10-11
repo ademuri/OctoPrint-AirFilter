@@ -7,7 +7,7 @@
 $(function() {
     function AirfilterViewModel(parameters) {
         let self = this;
-        const colors = ["#F88", "#FB8", "#FF8", "#BF8", "#8F8"];
+        self.colors = ["#F88", "#DA8", "#BB8", "#AD8", "#8F8"];
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
@@ -70,11 +70,19 @@ $(function() {
         };
 
         self.indexColor = (index) => {
-            return colors.reverse()[Math.round((index - self.indexMin) / (self.indexMax - self.indexMin) * (colors.length - 1))];
+            const red = 15 - Math.round((index - self.indexMin) / (self.indexMax - self.indexMin) * 7);
+            const color = (15 << 8) + (red << 4) + red;
+            const colorString = '#' + color.toString(16);
+            console.log(colorString);
+            return colorString;
         };
 
         self.rawColor = (raw) => {
-            return colors[Math.round((raw - self.rawMin) / (self.rawMax - self.rawMin) * (colors.length - 1))];
+            const red = 8 + Math.round((raw - self.rawMin) / (self.rawMax - self.rawMin) * 7);
+            const color = (15 << 8) + (red << 4) + red;
+            const colorString = '#' + color.toString(16);
+            console.log(colorString);
+            return colorString;
         };
     }
 
