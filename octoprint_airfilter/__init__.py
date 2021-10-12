@@ -103,19 +103,27 @@ class AirfilterPlugin(
 
   def initialize_output(self):
     new_settings = AirFilterSettings(self._settings)
-    pwm_frequency = 0
-    if self._settings.get(['pwm_frequency']) is not None:
-      pwm_frequency = int(self._settings.get(['pwm_frequency'], merged=True))
+    # Settings validation
+    if new_settings.pin_number == None:
+      self.turn_off()
+      return
+
+    if new_settings.is_pwm:
+      if new_settings.pwm_frequency == None:
+        raise RuntimeError("is_pwm is set, but pwm_frequency was not")
+      if new_settings.pwm_duty_cycle == None:
+        raise RuntimeError("is_pwm is set, but pwm_duty_cycle was not")
 
     if self.filter_settings_ == None or self.filter_settings_.pin_number == None:
+      # Previous settings or pin number was not set
       if new_settings.pin_number == None or new_settings.pin_number < 0:
         return
 
       GPIO.setup(new_settings.pin_number, GPIO.OUT)
-
       if new_settings.is_pwm:
-        self.pin = GPIO.PWM(new_settings.pin_number, pwm_frequency)
+        self.pin = GPIO.PWM(new_settings.pin_number, new_settings.pwm_frequency)
     elif new_settings.pin_number != self.filter_settings_.pin_number:
+      # Pin number changed
       self.turn_off()
 
       if new_settings.pin_number == None or new_settings.pin_number < 0:
@@ -124,7 +132,7 @@ class AirfilterPlugin(
       GPIO.setup(new_settings.pin_number, GPIO.OUT)
 
       if new_settings.is_pwm:
-        self.pin = GPIO.PWM(new_settings.pin_number, pwm_frequency)
+        self.pin = GPIO.PWM(new_settings.pin_number, new_settings.pwm_frequency)
     elif self.filter_settings_.is_pwm and not new_settings.is_pwm:
       # Stop using PWM
       self.pin.stop()
@@ -133,16 +141,14 @@ class AirfilterPlugin(
         self.turn_on()
     elif not self.filter_settings_.is_pwm and new_settings.is_pwm:
       # Start using PWM
-      self.pin = GPIO.PWM(self.filter_settings_.pin_number, pwm_frequency)
+      self.pin = GPIO.PWM(self.filter_settings_.pin_number, new_settings.pwm_frequency)
       if self.is_on:
         self.turn_on()
-
-    # TODO: only update if setting has been changed
-    if self.pin is not None:
-      self.pin.ChangeFrequency(pwm_frequency)
+    else:
+      if new_settings.is_pwm and self.filter_settings_.is_pwm and new_settings.pwm_frequency != self.filter_settings_.pwm_frequency:
+        self.pin.ChangeFrequency(new_settings.pwm_frequency)
 
     pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle != self.filter_settings_.pwm_duty_cycle and self.is_on)
-    
     self.filter_settings_ = new_settings
     self.update_output()
     
@@ -173,7 +179,7 @@ class AirfilterPlugin(
 
       if print_start_trigger and not self.printing and self.print_end_timer.expired():
         self.turn_off()
-      elif current_temperature != None and current_temperature < temperature_threshold:
+      elif current_temperature != None and temperature_threshold != None and current_temperature < temperature_threshold:
         if not (print_start_trigger and self.printing):
           self.turn_off()
 
@@ -215,8 +221,8 @@ class AirfilterPlugin(
     return {
         AirFilterSettings.PIN_NUMBER: None,
         AirFilterSettings.IS_PWM: False,
-        AirFilterSettings.INVERT: True,
-        'pwm_frequency': 1000,
+        AirFilterSettings.INVERT: False,
+        AirFilterSettings.PWM_FREQUENCY: 1000,
         AirFilterSettings.PWM_DUTY_CYCLE: 90,
         'enable_temperature_threshold': False,
         'temperature_threshold': 60,

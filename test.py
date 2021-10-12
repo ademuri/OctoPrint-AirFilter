@@ -28,19 +28,34 @@ settings = settings(init=True)
 plugin._settings = octoprint.plugin.plugin_settings_for_settings_plugin('airfilter', plugin, settings=settings)
 plugin._settings.set_boolean(['fake_sgp40'], True)
 plugin._settings.set_int([AirFilterSettings.PIN_NUMBER], 1)
+plugin._settings.set_boolean([AirFilterSettings.IS_PWM], False)
 
 plugin.on_after_startup()
 
 plugin.turn_on()
 plugin.turn_off()
+plugin.turn_on()
+plugin.turn_off()
+
+plugin._settings.set_boolean([AirFilterSettings.IS_PWM], True)
+plugin._settings.set_int([AirFilterSettings.PWM_FREQUENCY], 200)
+plugin._settings.set_int([AirFilterSettings.PWM_DUTY_CYCLE], 50)
+plugin.turn_on()
+plugin.turn_off()
+
+plugin._settings.set_boolean([AirFilterSettings.IS_PWM], True)
+plugin.turn_on()
+plugin._settings.set_boolean([AirFilterSettings.IS_PWM], False)
+plugin.turn_off()
+plugin.turn_on()
+plugin._settings.set_boolean([AirFilterSettings.IS_PWM], True)
 
 plugin.on_event('PrintStarted', dict())
 plugin.on_event('PrintFailed', dict())
 plugin.on_event('PrintDone', dict())
 plugin.on_event('PrintCancelled', dict())
+plugin.update_output()
 
 plugin.save_timer()
-
-plugin.update_output()
 
 plugin.on_shutdown()
