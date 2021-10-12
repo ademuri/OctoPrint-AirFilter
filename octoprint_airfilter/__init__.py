@@ -160,9 +160,6 @@ class AirfilterPlugin(
       return
 
     print_start_trigger = self._settings.get_boolean(['print_start_trigger'])
-    enable_temperature_threshold = self._settings.get_boolean(
-        ['enable_temperature_threshold'])
-    temperature_threshold = self._settings.get_int(['temperature_threshold'])
     current_temperatures = None
     current_temperature = 0
     if self._printer.is_operational():
@@ -174,12 +171,12 @@ class AirfilterPlugin(
             'Warning: tool0->actual_temp not found in printer temps: %s', current_temperatures)
 
     if self.is_on:
-      if enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
+      if self.filter_settings_.enable_temperature_threshold and current_temperature != None and current_temperature >= self.filter_settings_.temperature_threshold:
         return
 
       if print_start_trigger and not self.printing and self.print_end_timer.expired():
         self.turn_off()
-      elif current_temperature != None and temperature_threshold != None and current_temperature < temperature_threshold:
+      elif current_temperature != None and self.filter_settings_.temperature_threshold != None and current_temperature < self.filter_settings_.temperature_threshold:
         if not (print_start_trigger and self.printing):
           self.turn_off()
 
@@ -187,7 +184,7 @@ class AirfilterPlugin(
       # not self.is_on
       if print_start_trigger and self.printing:
         self.turn_on()
-      elif enable_temperature_threshold and current_temperature != None and current_temperature >= temperature_threshold:
+      elif self.filter_settings_.enable_temperature_threshold and current_temperature != None and current_temperature >= self.filter_settings_.temperature_threshold:
         self.turn_on()
       else:
         self.manual_off = False
@@ -224,8 +221,8 @@ class AirfilterPlugin(
         AirFilterSettings.INVERT: False,
         AirFilterSettings.PWM_FREQUENCY: 1000,
         AirFilterSettings.PWM_DUTY_CYCLE: 90,
-        'enable_temperature_threshold': False,
-        'temperature_threshold': 60,
+        AirFilterSettings.ENABLE_TEMPERATURE_THRESHOLD: False,
+        AirFilterSettings.TEMPERATURE_THRESHOLD: 60,
         'print_start_trigger': True,
         'print_end_delay': 600,
         'filter_life': 0.0,

@@ -1,4 +1,5 @@
 # coding=utf-8
+""""Basic test for the plugin. Just makes sure that no errors are raised."""
 from __future__ import absolute_import
 
 import octoprint_airfilter
@@ -12,12 +13,13 @@ import logging
 
 class FakePrinter(octoprint.printer.PrinterInterface):
   """Fake implementation of a printer for testing."""
+  tool0_temperature = 0
 
   def is_operational(self, *args, **kwargs):
     return True
 
   def get_current_temperatures(self, *args, **kwargs):
-    return dict()
+    return {'tool0': {'actual': self.tool0_temperature}}
 
 
 plugin = AirfilterPlugin()
@@ -54,6 +56,14 @@ plugin.on_event('PrintStarted', dict())
 plugin.on_event('PrintFailed', dict())
 plugin.on_event('PrintDone', dict())
 plugin.on_event('PrintCancelled', dict())
+plugin.update_output()
+
+plugin.turn_off()
+plugin._printer.tool0_temperature = 70
+plugin.update_output()
+plugin.update_output()
+plugin._printer.tool0_temperature = 50
+plugin.update_output()
 plugin.update_output()
 
 plugin.save_timer()
