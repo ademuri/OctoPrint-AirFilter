@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import octoprint_airfilter
 from octoprint_airfilter import AirfilterPlugin
+from octoprint_airfilter import AirFilterSettings
 from octoprint.settings import settings
 import octoprint.plugin
 import octoprint.printer
@@ -21,11 +22,15 @@ class FakePrinter(octoprint.printer.PrinterInterface):
 
 plugin = AirfilterPlugin()
 settings = settings(init=True)
-plugin._settings = octoprint.plugin.plugin_settings(octoprint_airfilter.__plugin_name__, settings=settings)
+plugin._settings = octoprint.plugin.plugin_settings_for_settings_plugin('airfilter', plugin, settings=settings)
 plugin._settings.set_boolean(['fake_sgp40'], True)
+plugin._settings.set_int([AirFilterSettings.PIN_NUMBER], 1)
 plugin._printer = FakePrinter()
 plugin._logger = logging.getLogger(AirfilterPlugin.__name__)
 plugin.on_after_startup()
+
+plugin.turn_on()
+plugin.turn_off()
 
 plugin.on_event('PrintStarted', dict())
 plugin.on_event('PrintFailed', dict())

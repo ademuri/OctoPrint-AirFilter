@@ -7,15 +7,21 @@ class FakeGpio:
   """Emulation for Raspberry PI GPIO"""
 
   OUT = 'OUT'
+  pins = {}
 
   def __init__(self):
     self.logger_ = logging.getLogger('octoprint.plugins.airfilter')
 
   def setup(self, pin_number, type):
     self.logger_.info(f'Configure pin {pin_number} as type {type}')
+    self.pins[pin_number] = type
 
   def output(self, pin_number, value):
     self.logger_.info(f'Set pin {pin_number} to {1 if value else 0}')
+    if pin_number not in self.pins:
+      raise RuntimeError(f'FakeGpio.output: Pin {pin_number} not set up')
+    if self.pins[pin_number] != self.OUT:
+      raise RuntimeError(f'FakeGpio.output: Pin {pin_number} not set to output ({self.pins[pin_number]})')
 
   def cleanup(self, pin_number):
     self.logger_.info(f'Cleanup pin {pin_number}')
