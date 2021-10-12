@@ -19,7 +19,7 @@ from octoprint.util import RepeatedTimer
 
 from octoprint_airfilter.CountdownTimer import CountdownTimer
 from octoprint_airfilter.Stopwatch import Stopwatch
-from octoprint_airfilter.FakeSgp40 import FakeSgp40
+from octoprint_airfilter.fakes import FakeHtu21d, FakeSgp40
 from octoprint_airfilter.settings import AirFilterSettings
 
 # Hack to allow developing this plugin on non-RPi machines
@@ -267,6 +267,9 @@ class AirfilterPlugin(
     if self.sgp != None:
       state['sgp_index'] = self.sgp_index
       state['sgp_raw'] = self.sgp_raw
+    if self.temp_sensor != None:
+      state['temperature'] = self.temp_sensor.temperature
+      state['relative_humidity'] = self.temp_sensor.relative_humidity
     return flask.jsonify(state)
 
   @octoprint.plugin.BlueprintPlugin.route("/history", methods=["GET"])
@@ -333,6 +336,7 @@ class AirfilterPlugin(
       if self._settings.get_boolean(['fake_sgp40']):
         self._logger.info("Using fake SGP40 air quality sensor")
         self.sgp = FakeSgp40()
+        self.temp_sensor = FakeHtu21d()
     else:
       self._logger.info('Initializing SGP40 air quality sensor')
       i2c = busio.I2C(board.SCL, board.SDA)

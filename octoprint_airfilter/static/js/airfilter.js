@@ -14,8 +14,10 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         self.is_on = ko.observable(false);
-        self.sgp_raw = ko.observable(0);
-        self.sgp_index = ko.observable(0);
+        self.sgp_raw = ko.observable(null);
+        self.sgp_index = ko.observable(null);
+        self.temperature = ko.observable(null);
+        self.relative_humidity = ko.observable(null);
         self.history = ko.observableArray();
         self.indexMin = 0;
         self.indexMax = 0;
@@ -35,11 +37,20 @@ $(function() {
                 if (data['sgp_index'] > 0) {
                     self.sgp_index(data['sgp_index']);
                 }
+                if (data['temperature'] > 0) {
+                    self.temperature(data['temperature']);
+                }
+                if (data['relative_humidity'] > 0) {
+                    self.relative_humidity(data['relative_humidity']);
+                }
             });
         }
 
         self.getHistory = () => {
             $.getJSON("/plugin/airfilter/history", (data) => {
+                if (data.history.length <= 0) {
+                    return;
+                }
                 self.indexMin = data.history.map(a => a.index).reduce((a, b) => Math.min(a, b));
                 self.indexMax = data.history.map(a => a.index).reduce((a, b) => Math.max(a, b));
                 self.rawMin = data.history.map(a => a.raw).reduce((a, b) => Math.min(a, b));
