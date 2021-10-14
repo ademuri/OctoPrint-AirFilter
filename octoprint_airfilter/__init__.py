@@ -252,24 +252,31 @@ class AirfilterPlugin(
 
   @octoprint.plugin.BlueprintPlugin.route("/toggle", methods=["POST"])
   def toggle_filter(self):
-    if self.is_on:
-      self.turn_off()
-      self.manual_off = True
-    else:
-      self.turn_on()
-      self.manual_on = True
-    return flask.jsonify({'success': True})
+    try:
+      if self.is_on:
+        self.turn_off()
+        self.manual_off = True
+      else:
+        self.turn_on()
+        self.manual_on = True
+      return flask.jsonify({'success': True})
+    except Exception:
+      self._logger.error('Exception while toggling state', exc_info=True)
+      return flask.jsonify({'success': False})
 
   @octoprint.plugin.BlueprintPlugin.route("/state", methods=["GET"])
   def get_state(self):
     state = dict()
     state['state'] = self.is_on
-    if self.sgp != None:
-      state['sgp_index'] = self.sgp_index
-      state['sgp_raw'] = self.sgp_raw
-    if self.temp_sensor != None:
-      state['temperature'] = self.temp_sensor.temperature
-      state['relative_humidity'] = self.temp_sensor.relative_humidity
+    try:
+      if self.sgp != None:
+        state['sgp_index'] = self.sgp_index
+        state['sgp_raw'] = self.sgp_raw
+      if self.temp_sensor != None:
+        state['temperature'] = self.temp_sensor.temperature
+        state['relative_humidity'] = self.temp_sensor.relative_humidity
+    except Exception:
+      self._logger.error('Exception while getting state', exc_info=True)
     return flask.jsonify(state)
 
   @octoprint.plugin.BlueprintPlugin.route("/history", methods=["GET"])
