@@ -282,6 +282,12 @@ class AirfilterPlugin(
     return flask.jsonify({'history': history})
 
   def update_sgp40(self):
+    try:
+      self.update_sgp40_impl()
+    except Exception:
+      self._logger.error('Exception while updating SGP40', exc_info=True)
+
+  def update_sgp40_impl(self):
     self.sgp_raw = self.sgp.raw
     self.sgp_raw_buffer.append(self.sgp_raw)
 
