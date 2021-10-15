@@ -1,4 +1,14 @@
 <div>
+  <form class="form-horizontal" data-bind="submit: setDuty" id="set-duty">
+    <div class="control-group">
+        <label class="control-label">{{ _('PWM duty cycle') }}</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('The PWM output duty cycle - what percentage of the time the signal should be on') }}">
+            <input type="number" data-bind="value: duty" required>
+            <input type="submit" style="display:none"/>
+        </div>
+    </div>
+  </form>
+
   <div data-bind="if: sgp_index">
     <div class="control-group">
         <label class="control-label">{{ _('SGP40 Index') }}</label>

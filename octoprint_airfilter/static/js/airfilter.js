@@ -19,6 +19,7 @@ $(function() {
         self.temperature = ko.observable(null);
         self.relative_humidity = ko.observable(null);
         self.history = ko.observableArray();
+        self.duty = ko.observable(null);
         self.indexMin = 0;
         self.indexMax = 0;
         self.rawMin = 0;
@@ -95,6 +96,23 @@ $(function() {
             console.log(colorString);
             return colorString;
         };
+
+        self.setDuty = () => {
+            const request = {"duty": self.duty};
+            $.ajax({
+                url: "/plugin/airfilter/set_duty",
+                type: "POST",
+                data: ko.toJSON(request),
+                contentType:"application/json; charset=utf-8",
+                dataType:"json",
+                success: () => {
+                    $("#set-duty").css("background-color", "");
+                },
+                error: () => {
+                    $("#set-duty").css("background-color", "#F88");
+                }
+            });
+        }
     }
 
     /* view model class, parameters for constructor, container to bind to

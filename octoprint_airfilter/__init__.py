@@ -264,6 +264,13 @@ class AirfilterPlugin(
       self._logger.error('Exception while toggling state', exc_info=True)
       return flask.jsonify({'success': False})
 
+  @octoprint.plugin.BlueprintPlugin.route("/set_duty", methods=["POST"])
+  def set_duty(self):
+    duty = int(flask.request.json['duty'])
+    self._settings.set_int([AirFilterSettings.PWM_DUTY_CYCLE], duty)
+    self.initialize_output()
+    return flask.jsonify({'success': True})
+
   @octoprint.plugin.BlueprintPlugin.route("/state", methods=["GET"])
   def get_state(self):
     state = dict()
