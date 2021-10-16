@@ -77,6 +77,8 @@ class AirfilterPlugin(
   sgp_last_history = 0
   sgp_history_interval = 15 * 60
   sgp_history_size = 100
+  temperature = None
+  humidity = None
 
   def turn_on(self):
     if self.pin == None:
@@ -147,12 +149,6 @@ class AirfilterPlugin(
     else:
       if new_settings.is_pwm and self.filter_settings_.is_pwm and new_settings.pwm_frequency != self.filter_settings_.pwm_frequency:
         self.pin.ChangeFrequency(new_settings.pwm_frequency)
-
-    if self.filter_settings_:
-      if self.filter_settings_.air_quality and not new_settings.air_quality:
-        self.sgp40_timer.stop()
-      elif not self.filter_settings_.air_quality and new_settings.air_quality:
-        self.sgp40_timer.start()
 
     pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle != self.filter_settings_.pwm_duty_cycle and self.is_on)
     self.filter_settings_ = new_settings
@@ -286,9 +282,10 @@ class AirfilterPlugin(
       if self.sgp != None:
         state['sgp_index'] = self.sgp_index
         state['sgp_raw'] = self.sgp_raw
-      if self.temp_sensor != None:
-        state['temperature'] = self.temp_sensor.temperature
-        state['relative_humidity'] = self.temp_sensor.relative_humidity
+      if self.temperature != None:
+        state['temperature'] = self.temperature
+      if self.humidity != None:
+        state['relative_humidity'] = self.humidity
     except Exception:
       self._logger.error('Exception while getting state', exc_info=True)
     return flask.jsonify(state)
@@ -309,13 +306,17 @@ class AirfilterPlugin(
       self._logger.error('Exception while updating SGP40', exc_info=True)
 
   def update_sgp40_impl(self):
+    if self.filter_settings_ and not self.filter_settings_.air_quality:
+      return
     self.sgp_raw = self.sgp.raw
     self.sgp_raw_buffer.append(self.sgp_raw)
 
     if self.temp_sensor == None:
       self.sgp_index = self.sgp.measure_index()
     else:
-      self.sgp_index = self.sgp.measure_index(temperature = self.temp_sensor.temperature, relative_humidity = self.temp_sensor.relative_humidity)
+      self.temperature = self.temp_sensor.temperature
+      self.humidity = self.temp_sensor.relative_humidity
+      self.sgp_index = self.sgp.measure_index(temperature = self.temperature, relative_humidity = self.humidity)
 
     self.sgp_index_buffer.append(self.sgp_index)
 
@@ -374,8 +375,7 @@ class AirfilterPlugin(
 
     if self.sgp != None:
       self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)
-      if self.filter_settings_.air_quality:
-        self.sgp40_timer.start()
+      self.sgp40_timer.start()
 
   def on_shutdown(self):
     self.save_timer()
