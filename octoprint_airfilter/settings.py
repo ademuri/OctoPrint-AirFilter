@@ -11,6 +11,7 @@ class AirFilterSettings:
   PWM_DUTY_CYCLE = 'pwm_duty_cycle'
   ENABLE_TEMPERATURE_THRESHOLD = 'enable_temperature_threshold'
   TEMPERATURE_THRESHOLD = 'temperature_threshold'
+  AIR_QUALITY = 'air_quality'
 
   def __init__(self, settings):
     self.pin_number = settings.get_int([self.PIN_NUMBER], merged=True)
@@ -20,8 +21,10 @@ class AirFilterSettings:
     self.pwm_duty_cycle = settings.get_int([self.PWM_DUTY_CYCLE], merged=True)
     self.enable_temperature_threshold = settings.get_boolean([self.ENABLE_TEMPERATURE_THRESHOLD], merged=True)
     self.temperature_threshold = settings.get_int([self.TEMPERATURE_THRESHOLD], merged=True)
+    self.air_quality = settings.get_boolean([self.AIR_QUALITY])
 
   def __str__(self):
     return (f'AirFilterSettings(pin_number: {self.pin_number}, is_pwm: {self.is_pwm}, invert: {self.invert}, '
         f'pwm_frequency: {self.pwm_frequency}, pwm_duty_cycle: {self.pwm_duty_cycle}), '
-        f'enable_temperature_threshold: {self.enable_temperature_threshold}, temperature_threshold: {self.temperature_threshold}')
+        f'enable_temperature_threshold: {self.enable_temperature_threshold}, temperature_threshold: {self.temperature_threshold}, '
+        f'air_quality: {self.air_quality}')

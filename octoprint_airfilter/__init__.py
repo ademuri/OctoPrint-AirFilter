@@ -148,6 +148,12 @@ class AirfilterPlugin(
       if new_settings.is_pwm and self.filter_settings_.is_pwm and new_settings.pwm_frequency != self.filter_settings_.pwm_frequency:
         self.pin.ChangeFrequency(new_settings.pwm_frequency)
 
+    if self.filter_settings_:
+      if self.filter_settings_.air_quality and not new_settings.air_quality:
+        self.sgp40_timer.stop()
+      elif not self.filter_settings_.air_quality and new_settings.air_quality:
+        self.sgp40_timer.start()
+
     pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle != self.filter_settings_.pwm_duty_cycle and self.is_on)
     self.filter_settings_ = new_settings
     self.update_output()
@@ -226,6 +232,7 @@ class AirfilterPlugin(
         'print_start_trigger': True,
         'print_end_delay': 600,
         'filter_life': 0.0,
+        AirFilterSettings.AIR_QUALITY: False,
         'fake_sgp40': False,
     }
 
@@ -367,7 +374,8 @@ class AirfilterPlugin(
 
     if self.sgp != None:
       self.sgp40_timer = RepeatedTimer(1, self.update_sgp40)
-      self.sgp40_timer.start()
+      if self.filter_settings_.air_quality:
+        self.sgp40_timer.start()
 
   def on_shutdown(self):
     self.save_timer()
