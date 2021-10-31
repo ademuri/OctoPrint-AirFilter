@@ -14,7 +14,7 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         self.is_on = ko.observable(false);
-        self.filter_life = ko.observable(null);
+        self.filter_life = ko.observable(-1);
         self.sgp_raw = ko.observable(null);
         self.sgp_index = ko.observable(null);
         self.temperature = ko.observable(null);
@@ -33,7 +33,7 @@ $(function() {
         self.updateState = () => {
             return $.getJSON("/plugin/airfilter/state", (data) => {
                 self.is_on(data['state']);
-                self.filter_life(data['filter_life']);
+                self.filter_life(data['filter_life'].toFixed(1));
                 self.duty(data['pwm_duty_cycle']);
                 if (data['sgp_raw'] > 0) {
                     self.sgp_raw(data['sgp_raw']);
@@ -115,7 +115,30 @@ $(function() {
                     $("#set-duty").css("background-color", "#F88");
                 }
             });
-        }
+        };
+
+        self.reset = () => {
+            self.filter_life(0);
+            self.setLife()
+        };
+
+        self.setLife = () => {
+            const request = {'life': self.filter_life};
+            $.ajax({
+                url: "/plugin/airfilter/set_life",
+                type: "POST",
+                data: ko.toJSON(request),
+                contentType:"application/json; charset=utf-8",
+                dataType:"json",
+                success: function(){
+                    self.updateState();
+                }
+              });
+        };
+
+        self.removeLifeReadonly = () => {
+            $('#filter-life').removeAttr('readonly');
+        };
     }
 
     /* view model class, parameters for constructor, container to bind to

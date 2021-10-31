@@ -194,7 +194,7 @@ class AirfilterPlugin(
   def save_timer(self):
     running = self.filter_stopwatch.is_running()
     current_timer_life = self._settings.get_float(
-        ['filter_life'], min=0.0, merged=True)
+        ['filter_life'], min=0.0, merged=True) or 0
     self.filter_stopwatch.stop()
     if self.filter_stopwatch.get() > 0:
       self._settings.set_float(
@@ -300,6 +300,14 @@ class AirfilterPlugin(
       history.append({'index': self.sgp_index_history[i], 'raw': self.sgp_raw_history[i], 'time': history_time.strftime('%H:%M')})
 
     return flask.jsonify({'history': history})
+
+  @octoprint.plugin.BlueprintPlugin.route("/set_life", methods=["POST"])
+  def set_life(self):
+    self.save_timer()
+    life = float(flask.request.json['life'])
+    self._settings.set_float(['filter_life'], life)
+    self._settings.save()
+    return flask.jsonify({'success': True})
 
   def update_sgp40(self):
     try:
