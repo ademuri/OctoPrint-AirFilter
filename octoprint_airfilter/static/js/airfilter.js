@@ -14,6 +14,7 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         self.is_on = ko.observable(false);
+        self.filter_life = ko.observable(null);
         self.sgp_raw = ko.observable(null);
         self.sgp_index = ko.observable(null);
         self.temperature = ko.observable(null);
@@ -32,6 +33,8 @@ $(function() {
         self.updateState = () => {
             return $.getJSON("/plugin/airfilter/state", (data) => {
                 self.is_on(data['state']);
+                self.filter_life(data['filter_life']);
+                self.duty(data['pwm_duty_cycle']);
                 if (data['sgp_raw'] > 0) {
                     self.sgp_raw(data['sgp_raw']);
                 }

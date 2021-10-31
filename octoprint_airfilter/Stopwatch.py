@@ -32,6 +32,12 @@ class Stopwatch:
   def get(self):
     return self.elapsed_seconds_ / (60 * 60)
 
+  def peek(self):
+    elapsed = self.elapsed_seconds_
+    if self.is_running_:
+      elapsed += time.monotonic() - self.last_started_
+    return elapsed / (60 * 60)
+
   def is_running(self):
       return self.is_running_
 

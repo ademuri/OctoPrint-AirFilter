@@ -9,6 +9,15 @@
     </div>
   </form>
 
+  <div>
+    <div class="control-group">
+      <label class="control-label">{{ _('Filter Life') }}</label>
+      <div class="controls" data-toggle="tooltip" title="{{ _('Number of hours the filter has run') }}">
+          <input type="number" readonly data-bind="value: filter_life().toFixed(1)">
+      </div>
+    </div>
+  </div>
+
   <div data-bind="if: sgp_index">
     <div class="control-group">
         <label class="control-label">{{ _('SGP40 Index') }}</label>

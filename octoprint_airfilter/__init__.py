@@ -278,6 +278,8 @@ class AirfilterPlugin(
   def get_state(self):
     state = dict()
     state['state'] = self.is_on
+    state['filter_life'] = self._settings.get_float(['filter_life'], merged=True) + self.filter_stopwatch.peek()
+    state['pwm_duty_cycle'] = self.filter_settings_.pwm_duty_cycle
     try:
       if self.sgp != None:
         state['sgp_index'] = self.sgp_index
