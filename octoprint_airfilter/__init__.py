@@ -422,7 +422,7 @@ class AirfilterPlugin(
             "current": self._plugin_version,
 
             # update method: pip
-            "pip": "https://github.com/ademuri/OctoPrint-AirFilter/archive/{target_version}.zip",
+            "pip": "https://github.com/ademuri/OctoPrint-AirFilter/archive/v{target_version}.zip",
         }
     }
 
