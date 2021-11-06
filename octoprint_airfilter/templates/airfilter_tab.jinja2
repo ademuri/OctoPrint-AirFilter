@@ -10,16 +10,25 @@
   </form>
 
   <div>
-    <form class="form-horizontal" data-bind="submit: setLife" id="set-life">
+    <form class="form-horizontal" data-bind="submit: setRuntime" id="set-runtime">
       <div class="control-group">
-        <label class="control-label">{{ _('Filter Life') }}</label>
+        <label class="control-label">{{ _('Filter Runtime') }}, Hours</label>
         <div class="controls" data-toggle="tooltip" title="{{ _('Number of hours the filter has run') }}">
-            <input type="number" step="0.01" readonly id="filter-life" data-bind="value: filter_life, click: removeLifeReadonly">
+            <input type="number" step="0.01" readonly id="filter-runtime" data-bind="value: filter_runtime, click: removeRuntimeReadonly">
             <input type="submit" style="display:none"/>
         </div>
-        <button data-bind="click: reset">Reset</button>
       </div>
     </form>
+    <form class="form-horizontal" data-bind="submit: setWalltime" id="set-walltime">
+      <div class="control-group">
+        <label class="control-label">{{ _('Filter Walltime') }}, Days</label>
+        <div class="controls" data-toggle="tooltip" title="{{ _('Number of days since the filter was changed') }}">
+            <input type="number" readonly id="filter-walltime" data-bind="value: filter_walltime, click: removeWalltimeReadonly">
+            <input type="submit" style="display:none"/>
+        </div>
+      </div>
+    </form>
+    <button data-bind="click: reset">Reset</button>
   </div>
 
   <div data-bind="if: sgp_index">

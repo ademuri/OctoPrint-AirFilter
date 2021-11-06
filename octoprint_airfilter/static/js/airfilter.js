@@ -14,7 +14,8 @@ $(function() {
         // self.settingsViewModel = parameters[1];
 
         self.is_on = ko.observable(false);
-        self.filter_life = ko.observable(-1);
+        self.filter_runtime = ko.observable(null);
+        self.filter_walltime = ko.observable(null);
         self.sgp_raw = ko.observable(null);
         self.sgp_index = ko.observable(null);
         self.temperature = ko.observable(null);
@@ -33,7 +34,8 @@ $(function() {
         self.updateState = () => {
             return $.getJSON("/plugin/airfilter/state", (data) => {
                 self.is_on(data['state']);
-                self.filter_life(data['filter_life'].toFixed(1));
+                self.filter_runtime(data['filter_runtime'].toFixed(1));
+                self.filter_walltime(data['filter_walltime']);
                 self.duty(data['pwm_duty_cycle']);
                 if (data['sgp_raw'] > 0) {
                     self.sgp_raw(data['sgp_raw']);
@@ -118,14 +120,16 @@ $(function() {
         };
 
         self.reset = () => {
-            self.filter_life(0);
-            self.setLife()
+            self.filter_runtime(0);
+            self.filter_walltime(0);
+            self.setRuntime();
+            self.setWalltime();
         };
 
-        self.setLife = () => {
-            const request = {'life': self.filter_life};
+        self.setRuntime = () => {
+            const request = {'runtime': self.filter_runtime};
             $.ajax({
-                url: "/plugin/airfilter/set_life",
+                url: "/plugin/airfilter/set_runtime",
                 type: "POST",
                 data: ko.toJSON(request),
                 contentType:"application/json; charset=utf-8",
@@ -136,8 +140,25 @@ $(function() {
               });
         };
 
-        self.removeLifeReadonly = () => {
-            $('#filter-life').removeAttr('readonly');
+        self.setWalltime = () => {
+            const request = {'walltime': self.filter_walltime};
+            $.ajax({
+                url: "/plugin/airfilter/set_walltime",
+                type: "POST",
+                data: ko.toJSON(request),
+                contentType:"application/json; charset=utf-8",
+                dataType:"json",
+                success: function(){
+                    self.updateState();
+                }
+              });
+        };
+
+        self.removeRuntimeReadonly = () => {
+            $('#filter-runtime').removeAttr('readonly');
+        };
+        self.removeWalltimeReadonly = () => {
+            $('#filter-walltime').removeAttr('readonly');
         };
     }
 

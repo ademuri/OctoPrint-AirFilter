@@ -14,6 +14,7 @@ import importlib
 import logging
 import time
 import datetime
+from datetime import date
 import octoprint.plugin
 from octoprint.util import RepeatedTimer
 
@@ -193,12 +194,12 @@ class AirfilterPlugin(
 
   def save_timer(self):
     running = self.filter_stopwatch.is_running()
-    current_timer_life = self._settings.get_float(
-        ['filter_life'], min=0.0, merged=True) or 0
+    current_timer_runtime = self._settings.get_float(
+        ['filter_runtime'], min=0.0, merged=True) or 0
     self.filter_stopwatch.stop()
     if self.filter_stopwatch.get() > 0:
       self._settings.set_float(
-          ['filter_life'], current_timer_life + self.filter_stopwatch.get())
+          ['filter_runtime'], current_timer_runtime + self.filter_stopwatch.get())
       self._settings.save()
     self.filter_stopwatch.reset()
     if running:
@@ -227,7 +228,8 @@ class AirfilterPlugin(
         AirFilterSettings.TEMPERATURE_THRESHOLD: 60,
         'print_start_trigger': True,
         'print_end_delay': 600,
-        'filter_life': 0.0,
+        'filter_runtime': 0.0,
+        'filter_changed': None,
         AirFilterSettings.AIR_QUALITY: False,
         'fake_sgp40': False,
     }
@@ -278,7 +280,8 @@ class AirfilterPlugin(
   def get_state(self):
     state = dict()
     state['state'] = self.is_on
-    state['filter_life'] = self._settings.get_float(['filter_life'], merged=True) + self.filter_stopwatch.peek()
+    state['filter_runtime'] = self._settings.get_float(['filter_runtime'], merged=True) + self.filter_stopwatch.peek()
+    state['filter_walltime'] = (date.today() - date.fromisoformat(self._settings.get(['filter_changed']))).days
     state['pwm_duty_cycle'] = self.filter_settings_.pwm_duty_cycle
     try:
       if self.sgp != None:
@@ -301,11 +304,19 @@ class AirfilterPlugin(
 
     return flask.jsonify({'history': history})
 
-  @octoprint.plugin.BlueprintPlugin.route("/set_life", methods=["POST"])
-  def set_life(self):
+  @octoprint.plugin.BlueprintPlugin.route("/set_runtime", methods=["POST"])
+  def set_runtime(self):
     self.save_timer()
-    life = float(flask.request.json['life'])
-    self._settings.set_float(['filter_life'], life)
+    runtime = float(flask.request.json['runtime'])
+    self._settings.set_float(['filter_runtime'], runtime)
+    self._settings.save()
+    return flask.jsonify({'success': True})
+
+  @octoprint.plugin.BlueprintPlugin.route("/set_walltime", methods=["POST"])
+  def set_walltime(self):
+    self.save_timer()
+    runtime = int(flask.request.json['walltime'])
+    self._settings.set(['filter_changed'], (date.today() - datetime.timedelta(days=runtime)).isoformat())
     self._settings.save()
     return flask.jsonify({'success': True})
 
@@ -366,8 +377,14 @@ class AirfilterPlugin(
     self.poll_timer = RepeatedTimer(20, self.update_output)
     self.poll_timer.start()
 
-    self.filter_life_timer = RepeatedTimer(30 * 60, self.save_timer)
-    self.filter_life_timer.start()
+    self.filter_runtime_timer = RepeatedTimer(30 * 60, self.save_timer)
+    self.filter_runtime_timer.start()
+
+    filter_replaced = self._settings.get(['filter_changed'])
+    if filter_replaced == None:
+      self._logger.info('Filter replace date not yet set, setting to today')
+      self._settings.set(['filter_changed'], date.today().isoformat())
+      self._settings.save()
 
     # Note: only run update_sgp40 in the timer, because it is blocking which can cause issues.
     if adafruit_sgp40 == None:
