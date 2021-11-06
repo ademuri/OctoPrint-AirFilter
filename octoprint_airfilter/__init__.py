@@ -83,7 +83,8 @@ class AirfilterPlugin(
 
   def turn_on(self):
     if self.pin == None:
-      GPIO.output(self.filter_settings_.pin_number, not self.filter_settings_.invert)
+      GPIO.output(self.filter_settings_.pin_number,
+                  not self.filter_settings_.invert)
     else:
       self.pin.start(self.filter_settings_.pwm_duty_cycle)
     self.is_on = True
@@ -95,7 +96,8 @@ class AirfilterPlugin(
       self.save_timer()
       if self.pin is None:
         if self.filter_settings_.pin_number >= 0:
-          GPIO.output(self.filter_settings_.pin_number, self.filter_settings_.invert)
+          GPIO.output(self.filter_settings_.pin_number,
+                      self.filter_settings_.invert)
       else:
         self.pin.stop()
         if self.filter_settings_.invert:
@@ -124,7 +126,8 @@ class AirfilterPlugin(
 
       GPIO.setup(new_settings.pin_number, GPIO.OUT)
       if new_settings.is_pwm:
-        self.pin = GPIO.PWM(new_settings.pin_number, new_settings.pwm_frequency)
+        self.pin = GPIO.PWM(new_settings.pin_number,
+                            new_settings.pwm_frequency)
     elif new_settings.pin_number != self.filter_settings_.pin_number:
       # Pin number changed
       self.turn_off()
@@ -135,7 +138,8 @@ class AirfilterPlugin(
       GPIO.setup(new_settings.pin_number, GPIO.OUT)
 
       if new_settings.is_pwm:
-        self.pin = GPIO.PWM(new_settings.pin_number, new_settings.pwm_frequency)
+        self.pin = GPIO.PWM(new_settings.pin_number,
+                            new_settings.pwm_frequency)
     elif self.filter_settings_.is_pwm and not new_settings.is_pwm:
       # Stop using PWM
       self.pin.stop()
@@ -144,17 +148,19 @@ class AirfilterPlugin(
         self.turn_on()
     elif not self.filter_settings_.is_pwm and new_settings.is_pwm:
       # Start using PWM
-      self.pin = GPIO.PWM(self.filter_settings_.pin_number, new_settings.pwm_frequency)
+      self.pin = GPIO.PWM(self.filter_settings_.pin_number,
+                          new_settings.pwm_frequency)
       if self.is_on:
         self.turn_on()
     else:
       if new_settings.is_pwm and self.filter_settings_.is_pwm and new_settings.pwm_frequency != self.filter_settings_.pwm_frequency:
         self.pin.ChangeFrequency(new_settings.pwm_frequency)
 
-    pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle != self.filter_settings_.pwm_duty_cycle and self.is_on)
+    pwm_duty_changed = (self.filter_settings_ != None and new_settings.pwm_duty_cycle !=
+                        self.filter_settings_.pwm_duty_cycle and self.is_on)
     self.filter_settings_ = new_settings
     self.update_output()
-    
+
     if pwm_duty_changed:
       self.turn_on()
 
@@ -280,8 +286,10 @@ class AirfilterPlugin(
   def get_state(self):
     state = dict()
     state['state'] = self.is_on
-    state['filter_runtime'] = self._settings.get_float(['filter_runtime'], merged=True) + self.filter_stopwatch.peek()
-    state['filter_walltime'] = (date.today() - date.fromisoformat(self._settings.get(['filter_changed']))).days
+    state['filter_runtime'] = self._settings.get_float(
+        ['filter_runtime'], merged=True) + self.filter_stopwatch.peek()
+    state['filter_walltime'] = (
+        date.today() - date.fromisoformat(self._settings.get(['filter_changed']))).days
     state['pwm_duty_cycle'] = self.filter_settings_.pwm_duty_cycle
     try:
       if self.sgp != None:
@@ -299,8 +307,10 @@ class AirfilterPlugin(
   def get_history(self):
     history = []
     for i in range(0, len(self.sgp_raw_history)):
-      history_time = datetime.datetime.now() - datetime.timedelta(seconds = i * self.sgp_history_interval + time.monotonic() - self.sgp_last_history)
-      history.append({'index': self.sgp_index_history[i], 'raw': self.sgp_raw_history[i], 'time': history_time.strftime('%H:%M')})
+      history_time = datetime.datetime.now() - datetime.timedelta(seconds=i *
+                                                                  self.sgp_history_interval + time.monotonic() - self.sgp_last_history)
+      history.append(
+          {'index': self.sgp_index_history[i], 'raw': self.sgp_raw_history[i], 'time': history_time.strftime('%H:%M')})
 
     return flask.jsonify({'history': history})
 
@@ -316,7 +326,8 @@ class AirfilterPlugin(
   def set_walltime(self):
     self.save_timer()
     runtime = int(flask.request.json['walltime'])
-    self._settings.set(['filter_changed'], (date.today() - datetime.timedelta(days=runtime)).isoformat())
+    self._settings.set(['filter_changed'], (date.today() -
+                       datetime.timedelta(days=runtime)).isoformat())
     self._settings.save()
     return flask.jsonify({'success': True})
 
@@ -337,7 +348,8 @@ class AirfilterPlugin(
     else:
       self.temperature = self.temp_sensor.temperature
       self.humidity = self.temp_sensor.relative_humidity
-      self.sgp_index = self.sgp.measure_index(temperature = self.temperature, relative_humidity = self.humidity)
+      self.sgp_index = self.sgp.measure_index(
+          temperature=self.temperature, relative_humidity=self.humidity)
 
     self.sgp_index_buffer.append(self.sgp_index)
 

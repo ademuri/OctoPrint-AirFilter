@@ -39,7 +39,7 @@ class Stopwatch:
     return elapsed / (60 * 60)
 
   def is_running(self):
-      return self.is_running_
+    return self.is_running_
 
   def reset(self):
     self.last_started_ = -1
